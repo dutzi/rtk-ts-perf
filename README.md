@@ -1,46 +1,38 @@
-# Getting Started with Create React App
+# Reproduce RTK Query TS Perf Issues
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+See reproduction video here https://cln.sh/bHBsDGGm.
 
-## Available Scripts
+**STR:**
 
-In the project directory, you can run:
+1. Open `./src/store.ts`
+2. Start typing `store.getState().` and wait for intellisense to show up
 
-### `npm start`
+Expected:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+Immediate results (< 300ms).
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+Actual:
 
-### `npm test`
+Results take >2 seconds to show up.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+I think I found a possible reason. If you open `./node_modules/@reduxjs/toolkit/dist/query/react/module.d.ts` and in line 23, remove `HooksWithUniqueNames`:
 
-### `npm run build`
+```ts
+} & HooksWithUniqueNames<Definitions>;
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+Change to:
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```ts
+}
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+Then follow the STR above, you'll get instant results.
 
-### `npm run eject`
+**Tip:**
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+If you want to get accurate timings, open the Command Palette in VSCode and choose "TypeScript: Open TS Server log", it might ask you enable TS logging, approve and then copy the path to the tsserver.log file that just opened (command palette -> "File: Copy Path of Active File"), now start a terminal and run:
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
+```
+tail -f "<path_to_tsserver.log>" | grep "completionInfo: elapsed time"
+```
